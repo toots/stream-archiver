@@ -52,7 +52,7 @@ startSaveStream = (show, onDone, cb) ->
       req = request.get show.url
 
       bufferedStream = new BufferedStream
-      size: 100 * 1024 # 100 ko
+        size: 100 * 1024 # 100 ko
 
       req.pipe bufferedStream
 
