@@ -1,9 +1,10 @@
-CronJob    = require("cron").CronJob
-dateFormat = require "dateformat"
-Dropbox    = require "dropbox"
-fs         = require "fs"
-nodemailer = require "nodemailer"
-request    = require "request"
+BufferedStream = require "./buffered-stream"
+CronJob        = require("cron").CronJob
+dateFormat     = require "dateformat"
+Dropbox        = require "dropbox"
+fs             = require "fs"
+nodemailer     = require "nodemailer"
+request        = require "request"
 
 # { 
 #   "dropbox": { "key": "...", "secret": "...", "token": "..." },
@@ -36,9 +37,14 @@ startSaveStream = (path, url, onDone, cb) ->
     console.log "Start uploading #{path}"
     req = request.get url
 
+    bufferedStream = new BufferedStream
+      size: 100 * 1024 # 100 ko
+
+    req.pipe bufferedStream
+
     state = null
-    req.on "data", (chunk) ->
-      req.pause()
+    bufferedStream.on "data", (chunk) ->
+      bufferedStream.pause()
 
       client.resumableUploadStep chunk, state, (err, newState) ->
         if err?
@@ -47,9 +53,9 @@ startSaveStream = (path, url, onDone, cb) ->
           return onDone err
 
         state = newState
-        req.resume()
+        bufferedStream.resume()
 
-    req.on "end", ->
+    bufferedStream.on "end", ->
       return unless client?
 
       client.resumableUploadFinish path, state, {}, (err) ->
