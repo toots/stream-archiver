@@ -2,6 +2,7 @@ BufferedStream = require "./buffered-stream"
 CronJob        = require("cron").CronJob
 dateFormat     = require "dateformat"
 Dropbox        = require "dropbox"
+path           = require "path"
 fs             = require "fs"
 nodemailer     = require "nodemailer"
 request        = require "request"
@@ -22,7 +23,7 @@ request        = require "request"
 #   }],
 # }
 
-config = JSON.parse fs.readFileSync("config.json")
+config = JSON.parse fs.readFileSync(path.join(__dirname,"config.json"))
 
 startSaveStream = (path, url, onDone, cb) ->
   client = new Dropbox.Client
