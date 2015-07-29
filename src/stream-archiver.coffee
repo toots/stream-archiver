@@ -23,9 +23,9 @@ request        = require "request"
 #   }],
 # }
 
-config = JSON.parse fs.readFileSync(path.join(__dirname,"config.json"))
+config = JSON.parse fs.readFileSync(path.join(__dirname, "..", "config.json"))
 
-startSaveStream = (path, url, onDone, cb) ->
+startSaveStream = (show, onDone, cb) ->
   client = new Dropbox.Client
     key:     config.dropbox.key
     secret:  config.dropbox.secret
@@ -35,44 +35,56 @@ startSaveStream = (path, url, onDone, cb) ->
   client.authenticate (err, client) ->
     return cb err if err?
 
-    console.log "Start uploading #{path}"
-    req = request.get url
+    req  = null
+    done = false
 
-    bufferedStream = new BufferedStream
+    abort = ->
+      req?.abort?()
+      done = true
+
+    basePath = "#{show.name}/#{dateFormat "mm-dd-yyyy"}"
+
+    upload = (index) ->
+      suffix = if index == 0 then "" else "-#{index}"
+      path = "#{basePath}/archive#{suffix}.#{show.format}"
+
+      console.log "Start uploading #{path}"
+      req = request.get show.url
+
+      bufferedStream = new BufferedStream
       size: 100 * 1024 # 100 ko
 
-    req.pipe bufferedStream
+      req.pipe bufferedStream
 
-    state = null
-    bufferedStream.on "data", (chunk) ->
-      bufferedStream.pause()
+      state = null
+      bufferedStream.on "data", (chunk) ->
+        bufferedStream.pause()
 
-      client.resumableUploadStep chunk, state, (err, newState) ->
-        if err?
-          client = null
-          req.abort()
-          return onDone err
+        client.resumableUploadStep chunk, state, (err, newState) ->
+          if err?
+            client = null
+            req.abort()
+            return onDone err
 
-        state = newState
-        bufferedStream.resume()
+          state = newState
+          bufferedStream.resume()
 
-    bufferedStream.on "end", ->
-      return unless client?
+      bufferedStream.on "end", ->
+        client?.resumableUploadFinish path, state, {}, (err) ->
+          return onDone err if err? 
 
-      client.resumableUploadFinish path, state, {}, (err) ->
-        return onDone err if err? 
+          console.log "Finished uploading #{path}!"
 
-        console.log "Finished uploading #{path}!"
+          return upload (index+1) unless done
 
-        client.makeUrl path, {}, (err, res) ->
-          return onDone err if err?
+          client.makeUrl basePath, {}, (err, res) ->
+            return onDone err if err?
 
-          onDone null, res.url
+            onDone null, res.url
 
-    cb null, req
+    upload 0
 
-stopSaveStream = (req) ->
-  req.abort()
+    cb null, abort
 
 emailTransporter = nodemailer.createTransport
   service: "Gmail"
@@ -102,11 +114,10 @@ Romi
 archiveShow = (show) ->
   console.log "Registering cron job for #{show.name}"
 
-  req = null
+  abort = null
 
   onStart = ->
     console.log "Starting recording #{show.name}"
-    remotePath = "#{show.name}/#{dateFormat "mm-dd-yyyy"}.#{show.format}"
 
     onDone = (err, url) ->
       return console.dir err if err?
@@ -115,14 +126,14 @@ archiveShow = (show) ->
       sendEmail show, url, (err) ->
         console.dir err if err?
 
-    startSaveStream remotePath, show.url, onDone, (err, _req) ->
+    startSaveStream show, onDone, (err, _abort) ->
       return console.dir err if err?
 
-      req = _req
+      abort = _abort
 
   onStop = ->
     console.log "Done recording #{show.name}"
-    req?.abort?()
+    abort?()
 
   new CronJob
     cronTime: show.start

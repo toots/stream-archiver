@@ -2,7 +2,7 @@
   "name": "stream-archiver",
   "version": "0.0.1",
   "description": "Archive streams",
-  "main": "index.coffee",
+  "main": "src/stream-downloader.coffee",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
