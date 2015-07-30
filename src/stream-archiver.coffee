@@ -26,7 +26,7 @@ request        = require "request"
 
 config = JSON.parse fs.readFileSync(path.join(__dirname, "..", "config.json"))
 
-startSaveStream = (show, onDone, cb) ->
+startSaveStream = (show, cb) ->
   client = new Dropbox.Client
     key:     config.dropbox.key
     secret:  config.dropbox.secret
@@ -38,13 +38,20 @@ startSaveStream = (show, onDone, cb) ->
 
     req    = null
     done   = false
-    failed = false
+    error  = null
 
-    abort = ->
+    basePath = "#{show.name}/#{dateFormat "mm-dd-yyyy"}"
+
+    onDone = (cb) ->
+      return cb error if error?
+
       req?.abort?()
       done = true
 
-    basePath = "#{show.name}/#{dateFormat "mm-dd-yyyy"}"
+      client.makeUrl basePath, {}, (err, res) ->
+        return cb err if err?
+
+        cb null, res.url
 
     upload = (index) ->
       suffix = if index == 0 then "" else "-#{index}"
@@ -60,24 +67,18 @@ startSaveStream = (show, onDone, cb) ->
       bufferedStream.pipe dropboxStream
 
       dropboxStream.on "error", (err) ->
-        failed = true
-        onDone err
+        error = err
 
       dropboxStream.on "uploaded", ->
-        return if failed
+        return if error?
 
-        console.log "Finished uploading #{path}!"
+        console.log "Finished uploading #{path}"
 
         return upload (index+1) unless done
 
-        client.makeUrl basePath, {}, (err, res) ->
-          return onDone err if err?
-
-          onDone null, res.url
-
     upload 0
 
-    cb null, abort
+    cb null, onDone
 
 emailTransporter = nodemailer.createTransport
   service: "Gmail"
@@ -107,26 +108,25 @@ Romi
 archiveShow = (show) ->
   console.log "Registering cron job for #{show.name}"
 
-  abort = null
+  onDone = null
 
   onStart = ->
     console.log "Starting recording #{show.name}"
 
-    onDone = (err, url) ->
+    startSaveStream show, (err, _onDone) ->
+      return console.dir err if err?
+
+      onDone = _onDone
+
+  onStop = ->
+    console.log "Done recording #{show.name}"
+
+    onDone? (err, url) ->
       return console.dir err if err?
 
       console.log "Sending email for #{show.name}"
       sendEmail show, url, (err) ->
         console.dir err if err?
-
-    startSaveStream show, onDone, (err, _abort) ->
-      return console.dir err if err?
-
-      abort = _abort
-
-  onStop = ->
-    console.log "Done recording #{show.name}"
-    abort?()
 
   new CronJob
     cronTime: show.start
