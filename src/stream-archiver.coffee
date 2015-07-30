@@ -2,6 +2,7 @@ BufferedStream = require "./buffered-stream"
 CronJob        = require("cron").CronJob
 dateFormat     = require "dateformat"
 Dropbox        = require "dropbox"
+DropboxStream  = require "./dropbox-stream"
 path           = require "path"
 fs             = require "fs"
 nodemailer     = require "nodemailer"
@@ -35,8 +36,9 @@ startSaveStream = (show, onDone, cb) ->
   client.authenticate (err, client) ->
     return cb err if err?
 
-    req  = null
-    done = false
+    req    = null
+    done   = false
+    failed = false
 
     abort = ->
       req?.abort?()
@@ -49,38 +51,29 @@ startSaveStream = (show, onDone, cb) ->
       path = "#{basePath}/archive#{suffix}.#{show.format}"
 
       console.log "Start uploading #{path}"
-      req = request.get show.url
 
-      bufferedStream = new BufferedStream
-        size: 100 * 1024 # 100 ko
+      req            = request.get show.url
+      bufferedStream = new BufferedStream (100 * 1024) # 100 ko
+      dropboxStream  = new DropboxStream client, path
 
       req.pipe bufferedStream
+      bufferedStream.pipe dropboxStream
 
-      state = null
-      bufferedStream.on "data", (chunk) ->
-        bufferedStream.pause()
+      dropboxStream.on "error", (err) ->
+        failed = true
+        onDone err
 
-        client.resumableUploadStep chunk, state, (err, newState) ->
-          if err?
-            client = null
-            req.abort()
-            return onDone err
+      dropboxStream.on "uploaded", ->
+        return if failed
 
-          state = newState
-          bufferedStream.resume()
+        console.log "Finished uploading #{path}!"
 
-      bufferedStream.on "end", ->
-        client?.resumableUploadFinish path, state, {}, (err) ->
-          return onDone err if err? 
+        return upload (index+1) unless done
 
-          console.log "Finished uploading #{path}!"
+        client.makeUrl basePath, {}, (err, res) ->
+          return onDone err if err?
 
-          return upload (index+1) unless done
-
-          client.makeUrl basePath, {}, (err, res) ->
-            return onDone err if err?
-
-            onDone null, res.url
+          onDone null, res.url
 
     upload 0
 

@@ -1,12 +1,11 @@
 {Transform} = require "stream"
 
 class module.exports extends Transform
-  constructor: (opts = {}) ->
+  constructor: (@size) ->
     @_chunks  = []
     @_curSize = 0
-    @size     = opts.size
 
-    super opts
+    super decodeStrings: true
 
   _flush: (cb) ->
     @push Buffer.concat(@_chunks)
