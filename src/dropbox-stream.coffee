@@ -15,4 +15,4 @@ class module.exports extends Writable
       cb err
 
   _writev: (chunks, cb) ->
-    @_write Buffer.concat(el.chunk for el in chunks), cb
+    @_write Buffer.concat(el.chunk for el in chunks), null, cb
