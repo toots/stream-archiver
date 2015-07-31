@@ -22,7 +22,7 @@ class module.exports extends EventEmitter
 
      request        = request.get @show.url 
      mmapStream     = new MmapStream (10 * 1024 * 1024) # 10 Mo
-     bufferedStream = new BufferedStream (100 * 1024) # 100 ko
+     bufferedStream = new BufferedStream (1024 * 1024) # 1 Mo
      dropboxStream  = new DropboxStream @client, path
      
      request.pipe mmapStream

@@ -13,6 +13,3 @@ class module.exports extends Writable
   _write: (chunk, encoding, cb) ->
     @client.resumableUploadStep chunk, @state, (err, @state) =>
       cb err
-
-  _writev: (chunks, cb) ->
-    @_write Buffer.concat(el.chunk for el in chunks), null, cb
