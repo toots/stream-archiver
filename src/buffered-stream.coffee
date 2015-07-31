@@ -2,23 +2,47 @@
 
 class module.exports extends Transform
   constructor: (@size) ->
-    @_chunks  = []
-    @_curSize = 0
+    @chunks = []
+    @length = 0
 
     super decodeStrings: true
 
-  _flush: (cb) ->
-    @push Buffer.concat(@_chunks)
+  _flushOne: ->
+    return unless @size <= @length
 
-    @_chunks  = []
-    @_curSize = 0
+    tmp = []
+    len = 0
+
+    while tmp < @size
+      buf = @chunks.shift()
+      tmp.push buf
+      len += buf.length
+
+    buf = Buffer.concat tmp
+
+    @push buf.slice 0, @size
+    @chunks.unshift buf.slice(@size)
+    @length -= @size
+
+  _flush: (cb) ->
+    tmp = []
+    len = 0
+
+    while @size < @length
+      @_flushOne()
+
+    @push Buffer.concat(@chunks)
+
+    @chunks = []
+    @length = 0
 
     cb()
 
   _transform: (chunk, encoding, cb) ->
-    @_chunks.push chunk
-    @_curSize += chunk.length
+    @chunks.push chunk
+    @length += chunk.length
 
-    return cb() unless @size <= @_curSize
+    while @size < @length
+      @_flushOne()
 
-    @_flush cb
+    cb()

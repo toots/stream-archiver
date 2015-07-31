@@ -2,6 +2,7 @@ BufferedStream = require "./buffered-stream"
 dateFormat     = require "dateformat"
 DropboxStream  = require "./dropbox-stream"
 {EventEmitter} = require "events"
+MmapStream     = require "mmap-stream"
 request        = require "request"
 
 class module.exports extends EventEmitter
@@ -20,10 +21,12 @@ class module.exports extends EventEmitter
      path = "#{@path}/archive#{suffix}.#{@show.format}"
 
      request        = request.get @show.url 
+     mmapStream     = new MmapStream (10 * 1024 * 1024) # 10 Mo
      bufferedStream = new BufferedStream (100 * 1024) # 100 ko
      dropboxStream  = new DropboxStream @client, path
      
-     request.pipe bufferedStream
+     request.pipe mmapStream
+     mmapStream.pipe bufferedStream
      bufferedStream.pipe dropboxStream
 
      dropboxStream.on "uploaded", =>

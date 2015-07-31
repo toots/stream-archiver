@@ -13,6 +13,7 @@
     "cron": "^1.0.9",
     "dateformat": "^1.0.11",
     "dropbox": "^0.10.3",
+    "mmap-stream": "^0.1.0",
     "nodemailer": "^1.4.0",
     "request": "^2.60.0"
   }

@@ -92,6 +92,8 @@ archiveShow = (show) ->
       uploader.start()
 
   onStop = ->
+    return unless uploader?
+
     console.log "Done recording #{show.name}"
 
     uploader.stop()
