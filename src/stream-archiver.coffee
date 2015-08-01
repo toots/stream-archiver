@@ -96,16 +96,17 @@ archiveShow = (show) ->
 
     console.log "Done recording #{show.name}"
 
+    uploader.on "uploaded", ->
+      uploader.getUrl (err, url) ->
+        if err?
+          console.log "Error while getting dropbox url:"
+          return console.dir err
+
+        console.log "Sending email for #{show.name}"
+        sendEmail show, url, (err) ->
+          console.dir err if err?
+
     uploader.stop()
-
-    uploader.getUrl (err, url) ->
-      if err?
-        console.log "Error while getting dropbox url:"
-        return console.dir err
-
-      console.log "Sending email for #{show.name}"
-      sendEmail show, url, (err) ->
-        console.dir err if err?
 
   new CronJob
     cronTime: show.start
