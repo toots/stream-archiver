@@ -1,0 +1,11 @@
+src/config.cmi :
+src/config.cmo : src/config.cmi
+src/config.cmx : src/config.cmi
+src/semaphore.cmi :
+src/semaphore.cmo : src/semaphore.cmi
+src/semaphore.cmx : src/semaphore.cmi
+src/dropbox_uploader.cmi :
+src/dropbox_uploader.cmo : src/dropbox_uploader.cmi
+src/dropbox_uploader.cmx : src/dropbox_uploader.cmi
+src/main.cmo : src/semaphore.cmi
+src/main.cmx : src/semaphore.cmx

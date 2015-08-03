@@ -1,4 +1,5 @@
 .*sw*
-config.json
-node_modules/
-build/
+*.cm*
+*.o
+src/config.ml
+stream-archiver
