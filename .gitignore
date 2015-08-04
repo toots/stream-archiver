@@ -1,4 +1,2 @@
 .*sw*
-config.json
-node_modules/
-build/
+config.ml
