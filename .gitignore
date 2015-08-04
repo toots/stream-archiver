@@ -1,2 +1,5 @@
 .*sw*
-config.ml
+*.cm*
+*.o
+src/config.ml
+stream-archiver
