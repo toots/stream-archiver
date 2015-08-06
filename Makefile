@@ -1,12 +1,12 @@
 .PHONY: all install-deps clean
 
 # Config
-PACKAGES := lwt cohttp # smtp dropbox
+PACKAGES := conf-gnutls ocamlnet lwt cohttp # dropbox
 SUBDIRS := src
 OCAMLFIND := ocamlfind
 OCAMLOPT := $(OCAMLFIND) ocamlopt
 OCAMLDEP := $(OCAMLFIND) ocamldep
-OCAMLFLAGS := -g -package lwt -package cohttp -package dropbox.lwt $(SUBDIRS:%=-I %)
+OCAMLFLAGS := -g -package cohttp,dropbox.lwt,netstring,netclient,nettls-gnutls $(SUBDIRS:%=-I %)
 x := cmx
 i := cmi
 V := @
@@ -14,6 +14,7 @@ V := @
 SOURCES := src/config.mli src/config.ml \
            src/buffered_stream.mli src/buffered_stream.ml \
            src/uploader.mli src/uploader.ml \
+           src/sendmail.mli src/sendmail.ml \
            src/main.ml
 
 all: stream-archiver

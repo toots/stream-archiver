@@ -18,4 +18,5 @@ let () =
         Uploader.stop uploader >>= Lwt.return
   in
   let main_thread = Lwt.join [encoding_thread; waiting_thread] in
-  Lwt_main.run main_thread
+  Lwt_main.run main_thread;
+  Sendmail.send_mail Config.config 1
