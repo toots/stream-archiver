@@ -3,10 +3,6 @@ open Config
 let () =
   Nettls_gnutls.init ()
 
-let create_message subject body =
-  Netsendmail.compose ~from_addr:("Romain Beauxis", "romain.beauxis@gmail.com")
-    ~to_addrs:[("Romain Beauxis", "romain.beauxis@gmail.com")] ~subject:subject "blabla"
-
 let send_mail show url =
   let now =
     ODate.Unix.now ()
