@@ -28,10 +28,9 @@ let () =
   let waiting_thread =
     Lwt_unix.sleep ((float show.duration) *. 60.) >>= fun () ->
       Printf.printf "Stopping upload..\n%!";
-      Uploader.stop uploader >>=
-        return
+      Uploader.stop uploader
   in
 
-  let main_thread = Lwt.join [encoding_thread; waiting_thread] in
+  let main_thread = join [encoding_thread; waiting_thread] in
 
   Lwt_main.run main_thread

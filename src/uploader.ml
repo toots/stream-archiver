@@ -124,5 +124,5 @@ let stop t =
 
 let url t =
   D.shares t.client t.path >>= function
-    | Some {D.url} -> Lwt.return url
-    | None -> Lwt.fail (Failure "failed to get dropbox url..")
+    | Some {D.url} -> return url
+    | None -> fail (Failure "failed to get dropbox url..")
