@@ -1,19 +1,19 @@
 .PHONY: all install-deps clean
 
 # Config
-PACKAGES := ctypes ctypes-foreign lwt cohttp smtp # dropbox
+PACKAGES := lwt cohttp # smtp dropbox
 SUBDIRS := src
 OCAMLFIND := ocamlfind
 OCAMLOPT := $(OCAMLFIND) ocamlopt
 OCAMLDEP := $(OCAMLFIND) ocamldep
-OCAMLFLAGS := -g -thread -package ctypes -package ctypes.foreign -package lwt -package duppy -package cohttp -package smtp -package dropbox.lwt $(SUBDIRS:%=-I %)
+OCAMLFLAGS := -g -package lwt -package cohttp -package dropbox.lwt $(SUBDIRS:%=-I %)
 x := cmx
 i := cmi
 V := @
 
 SOURCES := src/config.mli src/config.ml \
-           src/semaphore.mli src/semaphore.ml \
-           src/dropbox_uploader.mli src/dropbox_uploader.ml \
+           src/buffered_stream.mli src/buffered_stream.ml \
+           src/uploader.mli src/uploader.ml \
            src/main.ml
 
 all: stream-archiver
