@@ -13,9 +13,22 @@ type t = {
   client : D.t
 }
 
-let create {dropbox_token; format; url} path =
-  let client = D.session dropbox_token in
-  let uri = Uri.of_string url in
+let create show =
+  let now =
+    ODate.Unix.now ()
+  in
+  let formatted_date =
+    match ODate.Unix.To.generate_printer "%m-%d-%Y" with
+      | None -> assert false
+      | Some printer -> ODate.Unix.To.string printer now
+  in
+
+  let client = D.session config.dropbox_token in
+  let uri = Uri.of_string show.url in
+  let path =
+    Printf.sprintf "%s/%s" show.name formatted_date
+  in
+  let format = show.format in
   let mutex = Lwt_mutex.create () in
   let thread = None in
   {thread; index = 0; mutex; uri; format; path; client}
@@ -36,9 +49,17 @@ let stream_upload client path bs =
     let flush =
       if canceled then
        begin
-        match bs.Buffered_stream.cancel () with
-          | Some chunk -> upload_chunk chunk ()
-          | None -> return_unit
+        let rem = bs.Buffered_stream.cancel () in
+        let tail =
+          Lwt_stream.get_available bs.Buffered_stream.stream
+        in
+        let to_send =
+          match rem with
+            | Some chunk -> tail @ [chunk]
+            | None -> tail
+        in
+        Lwt_stream.iter_s (fun chunk -> upload_chunk chunk ())
+          (Lwt_stream.of_list to_send)
        end
      else return_unit
     in
@@ -100,3 +121,8 @@ let stop t =
    end;
    Lwt_mutex.unlock t.mutex;
    return_unit
+
+let url t =
+  D.shares t.client t.path >>= function
+    | Some {D.url} -> Lwt.return url
+    | None -> Lwt.fail (Failure "failed to get dropbox url..")

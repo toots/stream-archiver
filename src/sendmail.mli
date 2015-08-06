@@ -1,1 +1,1 @@
-val send_mail : Config.t -> int -> unit
+val send_mail : Config.show -> string -> unit
