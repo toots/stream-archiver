@@ -1,7 +1,7 @@
 .PHONY: all install-deps clean
 
 # Config
-PACKAGES := conf-gnutls ocamlnet lwt cohttp odate # dropbox
+PACKAGES := conf-gnutls ocamlnet lwt cohttp odate dropbox
 SUBDIRS := src
 OCAMLFIND := ocamlfind
 OCAMLOPT := $(OCAMLFIND) ocamlopt
