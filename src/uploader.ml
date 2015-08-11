@@ -89,7 +89,10 @@ let start t =
       Printf.sprintf "%s/archive%s.%s" t.path suffix t.format
     in
     Printf.printf "Uploading %s\n%!" path;
-    let th = Cohttp_lwt_unix.Client.get t.uri >>= fun (_, body) ->
+    let headers =
+      Cohttp.Header.init_with "User-Agent" Cohttp.Header.user_agent
+    in
+    let th = Cohttp_lwt_unix.Client.get ~headers t.uri >>= fun (_, body) ->
       let stream =
         Buffered_stream.create (200 * 1024)
           (Cohttp_lwt_body.to_stream body)
