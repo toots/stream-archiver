@@ -1,6 +1,6 @@
 type t
 
-val create : Config.show -> t
+val create : Config.config -> Config.show -> t
 
 val start : t -> unit Lwt.t
 

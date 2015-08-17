@@ -8,12 +8,13 @@ type t = {
   mutable index : int;
   mutex : Lwt_mutex.t;
   uri : Uri.t;
+  config : config;
   format : string;
   path : string;
   client : D.t
 }
 
-let create show =
+let create config show =
   let now =
     ODate.Unix.now ()
   in
@@ -31,9 +32,9 @@ let create show =
   let format = show.format in
   let mutex = Lwt_mutex.create () in
   let thread = None in
-  {thread; index = 0; mutex; uri; format; path; client}
+  {thread; index = 0; config; mutex; uri; format; path; client}
 
-let stream_upload client path bs =
+let stream_upload config client path bs =
   let chunked_upload_id = ref None in
   let upload_chunk chunk () =
     let id, ofs =
@@ -63,7 +64,8 @@ let stream_upload client path bs =
        end
      else return_unit
     in
-    Printf.printf "Finishing upload of %s\n%!" path;
+    config.log
+      (Printf.sprintf "Finishing upload of %s\n%!" path);
     flush >>= fun () ->
       match !chunked_upload_id with
         | None -> fail Lwt_stream.Empty
@@ -88,7 +90,8 @@ let start t =
     let path =
       Printf.sprintf "%s/archive%s.%s" t.path suffix t.format
     in
-    Printf.printf "Uploading %s\n%!" path;
+    t.config.log
+      (Printf.sprintf "Uploading %s\n%!" path);
     let headers =
       Cohttp.Header.init_with "User-Agent" Cohttp.Header.user_agent
     in
@@ -97,16 +100,18 @@ let start t =
         Buffered_stream.create (200 * 1024)
           (Cohttp_lwt_body.to_stream body)
       in
-      stream_upload t.client path stream >>= fun canceled ->
+      stream_upload t.config t.client path stream >>= fun canceled ->
         if canceled then
          begin
-          Printf.printf "Done uploading %s\n%!" path;
+          t.config.log
+            (Printf.sprintf "Done uploading %s\n%!" path);
           return_unit
          end
         else
           Lwt_mutex.lock t.mutex >>= fun () ->
             t.index <- t.index + 1;
-            Printf.printf "%s upload interrupted..\n%!" path;
+            t.config.log
+              (Printf.sprintf "%s upload interrupted..\n%!" path);
             run ()
     in
     t.thread <- Some th;

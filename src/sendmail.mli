@@ -1,1 +1,1 @@
-val send_mail : Config.show -> string -> unit
+val send_mail : Config.config -> Config.show -> string -> unit

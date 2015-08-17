@@ -7,11 +7,20 @@ type show = {
   format: string
 }
 
-type t = {
-  dropbox_token : string;
-  gmail_user : string;
-  gmail_password : string;
-  shows: show list
+(* Only supports TLS-enabled
+ * SMTP servers for now. *)
+type smtp_config = {
+  host : string;
+  port : int;
+  user : string;
+  password : string;
+  from : string * string;
+  subject : show -> string;
+  body : show -> string -> string
 }
 
-val config : t
+type config = {
+  dropbox_token : string;
+  smtp : smtp_config;
+  log : string -> unit
+}
