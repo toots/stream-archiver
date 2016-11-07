@@ -14,7 +14,7 @@ let () =
     show.id = id) shows
   in
 
-  Printf.printf "Archving %s..\n%!" show.name;
+  Printf.printf "Archiving %s..\n%!" show.name;
 
   let main_thread =
     Stream_archiver.Runner.exec config show

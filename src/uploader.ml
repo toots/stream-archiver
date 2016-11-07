@@ -65,7 +65,7 @@ let stream_upload config client path bs =
      else return_unit
     in
     config.log
-      (Printf.sprintf "Finishing upload of %s\n%!" path);
+      (Printf.sprintf "Finishing upload of %s\n" path);
     flush >>= fun () ->
       match !chunked_upload_id with
         | None -> fail Lwt_stream.Empty
@@ -91,7 +91,7 @@ let start t =
       Printf.sprintf "%s/archive%s.%s" t.path suffix t.format
     in
     t.config.log
-      (Printf.sprintf "Uploading %s\n%!" path);
+      (Printf.sprintf "Uploading %s\n" path);
     let headers =
       Cohttp.Header.init_with "User-Agent" Cohttp.Header.user_agent
     in
@@ -104,14 +104,14 @@ let start t =
         if canceled then
          begin
           t.config.log
-            (Printf.sprintf "Done uploading %s\n%!" path);
+            (Printf.sprintf "Done uploading %s\n" path);
           return_unit
          end
         else
           Lwt_mutex.lock t.mutex >>= fun () ->
             t.index <- t.index + 1;
             t.config.log
-              (Printf.sprintf "%s upload interrupted..\n%!" path);
+              (Printf.sprintf "%s upload interrupted..\n" path);
             run ()
     in
     t.thread <- Some th;
