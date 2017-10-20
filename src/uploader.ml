@@ -35,18 +35,14 @@ let create config show =
   {thread; index = 0; config; mutex; uri; format; path; client}
 
 let stream_upload config client path bs =
-  let chunked_upload_id = ref None in
-  let upload_chunk chunk () =
-    let id, ofs =
-      match !chunked_upload_id with
-        | None -> None, None
-        | Some {D.id; ofs} -> (Some id), (Some ofs)
-    in
-    D.chunked_upload client ?id ?ofs (`String chunk) >>= fun (chunked_upload) ->
-      chunked_upload_id := Some chunked_upload;
+  let ofs = ref 0 in
+  let upload_chunk id chunk () =
+    let offset = !ofs in
+    D.upload_session_append client ~offset id (`String chunk) >>= fun () ->
+      ofs := !ofs+(String.length chunk);
       return_unit
   in
-  let on_done canceled =
+  let on_done id canceled =
     let flush =
       if canceled then
        begin
@@ -59,7 +55,7 @@ let stream_upload config client path bs =
             | Some chunk -> tail @ [chunk]
             | None -> tail
         in
-        Lwt_stream.iter_s (fun chunk -> upload_chunk chunk ())
+        Lwt_stream.iter_s (fun chunk -> upload_chunk id chunk ())
           (Lwt_stream.of_list to_send)
        end
      else return_unit
@@ -67,19 +63,18 @@ let stream_upload config client path bs =
     config.log
       (Printf.sprintf "Finishing upload of %s\n" path);
     flush >>= fun () ->
-      match !chunked_upload_id with
-        | None -> fail Lwt_stream.Empty
-        | Some {D.id} ->
-            D.commit_chunked_upload client id path >>= fun _ ->
-              return canceled
+      let offset = !ofs in
+      D.finish_upload_session client ~offset ~path id >>= fun _ ->
+        return canceled
   in
-  let upload_thread () =
-    Lwt_stream.fold_s upload_chunk bs.Buffered_stream.stream () >>= fun () ->
-      on_done false
-  in
-  catch upload_thread (function
-    | Canceled -> on_done true
-    | exn -> fail exn)
+  D.start_upload_session client >>= fun session_id ->
+    let upload_thread () =
+      Lwt_stream.fold_s (upload_chunk session_id) bs.Buffered_stream.stream () >>= fun () ->
+      on_done session_id false
+    in
+    catch upload_thread (function
+      | Canceled -> on_done session_id true
+      | exn -> fail exn)
 
 let start t =
   (* Expectation: t.mutex is locked. *)
