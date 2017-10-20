@@ -126,6 +126,5 @@ let stop t =
    return_unit
 
 let url t =
-  Printf.printf "path: %s\n" t.path;
   D.create_link t.client ~visibility:"public" t.path >>= fun res ->
     return res.D.url
