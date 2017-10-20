@@ -27,7 +27,7 @@ let create config show =
   let client = D.session config.dropbox_token in
   let uri = Uri.of_string show.url in
   let path =
-    Printf.sprintf "%s/%s" show.name formatted_date
+    Printf.sprintf "/%s/%s" show.name formatted_date
   in
   let format = show.format in
   let mutex = Lwt_mutex.create () in
@@ -70,7 +70,7 @@ let stream_upload config client path bs =
   D.start_upload_session client >>= fun session_id ->
     let upload_thread () =
       Lwt_stream.fold_s (upload_chunk session_id) bs.Buffered_stream.stream () >>= fun () ->
-      on_done session_id false
+        on_done session_id false
     in
     catch upload_thread (function
       | Canceled -> on_done session_id true
@@ -126,6 +126,6 @@ let stop t =
    return_unit
 
 let url t =
-  D.shares t.client t.path >>= function
-    | Some {D.url} -> return url
-    | None -> fail (Failure "failed to get dropbox url..")
+  Printf.printf "path: %s\n" t.path;
+  D.create_link t.client ~visibility:"public" t.path >>= fun res ->
+    return res.D.url
