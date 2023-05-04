@@ -1,0 +1,22 @@
+(library
+ (name stream_archiver)
+ (libraries
+  ez_subst
+  cohttp
+  dropbox_lwt_unix
+  odate
+  netstring
+  netclient
+  nettls-gnutls))
+
+(rule
+ (targets settings_j.ml settings_j.mli)
+ (deps settings.atd)
+ (action
+  (run atdgen -j -j-std %{deps})))
+
+(rule
+ (targets settings_t.ml settings_t.mli)
+ (deps settings.atd)
+ (action
+  (run atdgen -t %{deps})))

@@ -1,0 +1,6 @@
+(executable
+ (name stream_archiver)
+ (public_name stream_archiver)
+ (modules stream_archiver)
+ (package stream-archiver)
+ (libraries stream_archiver))
